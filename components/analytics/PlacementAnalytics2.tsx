@@ -1,0 +1,10 @@
+"use client";
+import {useEffect,useState} from "react";
+function Bar({label,value,max}:{label:string,value:number,max:number}){return <div className="metric-bar"><div><span>{label}</span><strong>{value}</strong></div><i style={{width:`${max?Math.max(4,value/max*100):4}%`}}/></div>}
+export default function PlacementAnalytics2(){
+ const [d,setD]=useState<any>(null);useEffect(()=>{fetch("/api/analytics/placement-trends").then(r=>r.json()).then(setD)},[]);
+ if(!d)return <section className="panel"><p>Loading advanced analytics...</p></section>;
+ const maxDept=Math.max(1,...d.department.map((x:any)=>x.placed));
+ const maxCompany=Math.max(1,...d.companies.map((x:any)=>x.offers));
+ return <div className="analytics-2"><div className="kpi-grid"><div className="kpi"><strong>{d.summary.students}</strong><span>Students</span></div><div className="kpi"><strong>{d.summary.placed}</strong><span>Placed</span></div><div className="kpi"><strong>{d.summary.averagePackage.toFixed(2)} LPA</strong><span>Average package</span></div><div className="kpi"><strong>{d.summary.highestPackage.toFixed(2)} LPA</strong><span>Highest package</span></div></div><div className="analytics-2-grid"><section className="panel"><h2>Placement by department</h2>{d.department.map((x:any)=><Bar key={x.department} label={`${x.department} · ${x.students} students`} value={x.placed} max={maxDept}/>)}</section><section className="panel"><h2>Top hiring companies</h2>{d.companies.map((x:any)=><Bar key={x.company} label={`${x.company} · ${x.applications} apps`} value={x.offers} max={maxCompany}/>)}</section><section className="panel"><h2>Graduation-year placement</h2>{d.graduationYear.map((x:any)=><Bar key={x.year} label={x.year} value={x.placed} max={Math.max(1,...d.graduationYear.map((z:any)=>z.placed))}/>)}</section><section className="panel"><h2>Package distribution</h2><div className="package-grid">{d.packages.length?d.packages.map((p:number,i:number)=><div key={i}><strong>{p.toFixed(2)}</strong><span>LPA</span></div>):<p className="muted">No offer packages yet.</p>}</div></section></div></div>
+}

@@ -1,0 +1,230 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+enum Role {
+  ADMIN
+  PLACEMENT_OFFICER
+  STUDENT
+}
+
+enum PlacementStatus {
+  NOT_PLACED
+  PLACED
+  OPTED_OUT
+}
+
+enum ApplicationStatus {
+  APPLIED
+  SHORTLISTED
+  APTITUDE
+  TECHNICAL
+  HR
+  SELECTED
+  REJECTED
+  OFFERED
+  ACCEPTED
+  WITHDRAWN
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String?
+  email         String         @unique
+  image         String?
+  role          Role           @default(STUDENT)
+  googleId      String?        @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  student       Student?
+  notifications Notification[]
+  crmActivities CrmActivity[]
+  fcmTokens     FcmToken[]
+  notificationPreferences Json?
+}
+
+model StudentDocument {
+  id           String   @id @default(cuid())
+  studentId    String
+  name         String
+  type         String
+  fileUrl      String
+  fileSize     Int
+  mimeType     String
+  version      Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, type])
+}
+
+model Student {
+  id               String         @id @default(cuid())
+  userId           String         @unique
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usn              String?        @unique
+  phone            String?
+  department       String?
+  graduationYear   Int?
+  cgpa             Float?
+  tenthPercentage  Float?
+  twelfthPercentage Float?
+  backlogs         Int            @default(0)
+  resumeUrl        String?
+  placementStatus  PlacementStatus @default(NOT_PLACED)
+  acceptedOfferCount Int            @default(0)
+  applications     Application[]
+  documents        StudentDocument[]
+  savedDrives      SavedDrive[]
+  placementTasks   PlacementTask[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+
+model PlacementTask {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  dueDate     DateTime?
+  priority    String   @default("MEDIUM")
+  status      String   @default("TODO")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([studentId, status, dueDate])
+}
+
+model CrmActivity {
+  id        String   @id @default(cuid())
+  companyId String
+  userId    String
+  type      String
+  subject   String
+  notes     String?
+  dueDate   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model Company {
+  id          String          @id @default(cuid())
+  name        String
+  website     String?
+  industry    String?
+  location    String?
+  description String?
+  recruiter   String?
+  recruiterEmail String?
+  drives      PlacementDrive[]
+  crmActivities CrmActivity[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model PlacementDrive {
+  id                 String        @id @default(cuid())
+  companyId          String
+  company            Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  role               String
+  description        String?
+  location           String?
+  packageLpa         Float?
+  driveDate          DateTime?
+  applicationDeadline DateTime?
+  minCgpa            Float?
+  allowedDepartments String?
+  graduationYear     Int?
+  maxBacklogs        Int           @default(0)
+  status             String        @default("ACTIVE")
+  applications       Application[]
+  savedBy            SavedDrive[]
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+}
+
+model SavedDrive {
+  id        String         @id @default(cuid())
+  studentId String
+  driveId   String
+  student   Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  drive     PlacementDrive @relation(fields: [driveId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+
+  @@unique([studentId, driveId])
+  @@index([studentId, createdAt])
+  @@index([driveId])
+}
+
+model Application {
+  id          String            @id @default(cuid())
+  studentId   String
+  driveId     String
+  student     Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  drive       PlacementDrive   @relation(fields: [driveId], references: [id], onDelete: Cascade)
+  status      ApplicationStatus @default(APPLIED)
+  appliedAt  DateTime          @default(now())
+  interviews  Interview[]
+  offer       Offer?
+  @@unique([studentId, driveId])
+}
+
+model Interview {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  round         String
+  scheduledAt   DateTime?
+  mode          String?
+  meetingLink   String?
+  result        String?
+  createdAt     DateTime    @default(now())
+}
+
+model Offer {
+  id            String      @id @default(cuid())
+  applicationId String      @unique
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  packageLpa    Float?
+  joiningDate   DateTime?
+  status        String       @default("PENDING")
+  createdAt     DateTime     @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String?
+  relatedId String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  @@index([userId, isRead, createdAt])
+}
+
+model FcmToken {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String   @unique
+  deviceType String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

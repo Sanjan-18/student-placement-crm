@@ -1,0 +1,7 @@
+"use client";
+import {useState} from "react";
+export default function AnnouncementCenter({canBroadcast}:{canBroadcast:boolean}){
+ const [form,setForm]=useState({title:"",message:"",role:"ALL"});const [msg,setMsg]=useState("");
+ async function send(e:React.FormEvent){e.preventDefault();setMsg("");const r=await fetch("/api/announcements",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});const d=await r.json();setMsg(r.ok?`Announcement sent to ${d.sent} users.`:d.error||"Failed.");}
+ return <div className="announcement-grid"><section className="panel"><h2>Announcement feed</h2><p className="muted">Your latest placement announcements appear in the notification center.</p><a className="secondary" href="/notifications">Open Notification Center</a></section>{canBroadcast&&<section className="panel"><h2>Broadcast</h2><form onSubmit={send} className="form-grid"><label>Audience<select value={form.role} onChange={e=>setForm({...form,role:e.target.value})}><option>ALL</option><option>STUDENT</option><option>PLACEMENT_OFFICER</option><option>ADMIN</option></select></label><label className="full">Title<input required value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label><label className="full">Message<textarea rows={6} required value={form.message} onChange={e=>setForm({...form,message:e.target.value})}/></label><button className="primary">Broadcast Announcement</button>{msg&&<span className="form-message">{msg}</span>}</form></section>}</div>
+}

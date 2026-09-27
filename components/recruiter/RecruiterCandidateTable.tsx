@@ -1,0 +1,17 @@
+"use client";
+import {useState} from "react";
+import Link from "next/link";
+
+const statuses=["APPLIED","SHORTLISTED","APTITUDE","TECHNICAL","HR","SELECTED","REJECTED","OFFERED","ACCEPTED","WITHDRAWN"];
+export default function RecruiterCandidateTable({applications}:{applications:any[]}){
+ const [rows,setRows]=useState(applications);const [q,setQ]=useState("");const [selected,setSelected]=useState<string[]>([]);const [busy,setBusy]=useState(false);const [msg,setMsg]=useState("");
+ const filtered=rows.filter(a=>[a.student.user.name,a.student.user.email,a.student.usn,a.student.department].filter(Boolean).join(" ").toLowerCase().includes(q.toLowerCase()));
+ function toggle(id:string){setSelected(x=>x.includes(id)?x.filter(v=>v!==id):[...x,id])}
+ async function update(id:string,status:string){setBusy(true);const r=await fetch(`/api/applications/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status})});const d=await r.json();setBusy(false);if(r.ok){setRows(x=>x.map(a=>a.id===id?{...a,status}:a));setMsg("Updated.");}else setMsg(d.error||"Update failed.");}
+ async function bulk(status:string){if(!selected.length)return;setBusy(true);const r=await fetch("/api/applications/bulk",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({ids:selected,status})});const d=await r.json();setBusy(false);if(r.ok){setRows(x=>x.map(a=>selected.includes(a.id)?{...a,status}:a));setSelected([]);setMsg(`${d.updated||selected.length} applications updated.`)}else setMsg(d.error||"Bulk update failed.")}
+ return <div><div className="candidate-toolbar"><input placeholder="Search candidates..." value={q} onChange={e=>setQ(e.target.value)}/><span>{filtered.length} shown</span>{selected.length>0&&<><select defaultValue="" disabled={busy} onChange={e=>e.target.value&&bulk(e.target.value)}><option value="">Bulk status...</option>{statuses.map(x=><option key={x}>{x}</option>)}</select><button className="secondary" onClick={()=>setSelected([])}>Clear</button></>}</div>
+ {msg&&<p className="form-message">{msg}</p>}
+ <div className="table-panel recruiter-candidate-table"><div className="table-head"><span><input type="checkbox" checked={filtered.length>0&&selected.length===filtered.length} onChange={e=>setSelected(e.target.checked?filtered.map(x=>x.id):[])}/></span><span>Candidate</span><span>Academic</span><span>Status</span><span>Resume</span><span>Action</span></div>
+ {filtered.map(a=><div className="table-row" key={a.id}><span><input type="checkbox" checked={selected.includes(a.id)} onChange={()=>toggle(a.id)}/></span><span><strong>{a.student.user.name||"Unnamed"}</strong><small>{a.student.user.email}</small></span><span><small>{a.student.department||"—"}</small><small>CGPA {a.student.cgpa??"—"} · {a.student.backlogs} backlogs</small></span><span><select value={a.status} disabled={busy} onChange={e=>update(a.id,e.target.value)}>{statuses.map(x=><option key={x}>{x}</option>)}</select></span><span>{a.student.documents?.find((d:any)=>d.type==="RESUME")?<a href={a.student.documents.find((d:any)=>d.type==="RESUME").fileUrl} target="_blank" rel="noreferrer">Open CV</a>:<span className="muted">No CV</span>}</span><span><Link className="secondary" href={`/students/${a.student.id}`}>Profile</Link></span></div>)}</div>
+ {!filtered.length&&<div className="empty"><p>No candidates match the search.</p></div>}</div>
+}

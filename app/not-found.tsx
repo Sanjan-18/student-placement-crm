@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function NotFound(){return <main className="content empty-state"><h1>Page not found</h1><p className="muted">The requested placement CRM page does not exist.</p><Link className="primary" href="/dashboard">Back to Dashboard</Link></main>}
