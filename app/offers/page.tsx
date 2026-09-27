@@ -6,8 +6,8 @@ import {prisma} from "@/lib/prisma";
 export default async function OffersPage(){
  const session=await auth(); if(!session?.user)return null;
  const isStudent=session.user.role==="STUDENT";
- const dbUser=isStudent?await prisma.user.findUnique({where:{email:session.user.email},include:{student:true}}):null;
- const offers=await prisma.offer.findMany({where:isStudent&&dbUser?.student?{application:{studentId:dbUser.student.id}}:{},include:{application:{include:{student:{include:{user:true}},drive:{include:{company:true}}}}},orderBy:{createdAt:"desc"}});
+ const student=isStudent?await prisma.student.findUnique({where:{userId:session.user.id}}):null;
+ const offers=await prisma.offer.findMany({where:isStudent&&student?{application:{studentId:student.id}}:{},include:{application:{include:{student:{include:{user:true}},drive:{include:{company:true}}}}},orderBy:{createdAt:"desc"}});
  return <WorkspaceShell role={session.user.role} active="offers">
  <section className="legacy-page-content"><header className="topbar"><div><h1>{isStudent ? "My Offers" : "Offers"}</h1><p>{isStudent ? "Review your placement offers and joining details" : "Track placement offers and joining details"}</p></div>{["ADMIN","PLACEMENT_OFFICER"].includes(session.user.role)&&<Link className="primary" href="/offers/new">+ Create Offer</Link>}</header>
  <div className="panel table-panel"><div className="table-head offer-head"><span>Student</span><span>Company</span><span>Role</span><span>Package</span><span>Joining</span><span>Status</span></div>

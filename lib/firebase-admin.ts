@@ -1,14 +1,30 @@
-import { cert, getApps, initializeApp } from "firebase-admin/app";
-import { getMessaging } from "firebase-admin/messaging";
+import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
+import { getMessaging, type Messaging } from "firebase-admin/messaging";
 
-const projectId=process.env.FIREBASE_PROJECT_ID;
-const clientEmail=process.env.FIREBASE_CLIENT_EMAIL;
-const privateKey=process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g,"\n");
+const projectId = process.env.FIREBASE_PROJECT_ID;
+const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
-export const firebaseAdminApp =
-  getApps()[0] ??
-  initializeApp({
-    credential: cert({projectId,clientEmail,privateKey}),
-  });
+function getFirebaseAdmin(): { app: App | null; messaging: Messaging | null } {
+  if (getApps().length > 0) {
+    const app = getApps()[0];
+    return { app, messaging: getMessaging(app) };
+  }
+  if (projectId && clientEmail && privateKey) {
+    try {
+      const app = initializeApp({
+        credential: cert({ projectId, clientEmail, privateKey }),
+      });
+      return { app, messaging: getMessaging(app) };
+    } catch (err) {
+      console.warn("Failed to initialize Firebase Admin:", err);
+      return { app: null, messaging: null };
+    }
+  }
+  return { app: null, messaging: null };
+}
 
-export const firebaseMessaging=getMessaging(firebaseAdminApp);
+const adminInstance = getFirebaseAdmin();
+export const firebaseAdminApp = adminInstance.app;
+export const firebaseMessaging = adminInstance.messaging;
+

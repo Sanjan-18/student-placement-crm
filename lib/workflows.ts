@@ -3,7 +3,7 @@ import {sendPushToUser} from "@/lib/notifications";
 
 export async function notifyUser(userId:string,title:string,message:string,type:string,relatedId?:string){
  const notification=await prisma.notification.create({data:{userId,title,message,type,relatedId}});
- try{await sendPushToUser(userId,{title,body:message,data:{type,relatedId:relatedId||""}})}catch{}
+ try{await sendPushToUser(userId,title,message,{type,relatedId:relatedId||""})}catch{}
  return notification;
 }
 
@@ -16,7 +16,7 @@ export async function applicationStatusWorkflow(applicationId:string,status:stri
 export async function interviewWorkflow(interviewId:string){
  const i=await prisma.interview.findUnique({where:{id:interviewId},include:{application:{include:{student:{include:{user:true}},drive:{include:{company:true}}}}}});
  if(!i)return;
- await notifyUser(i.application.student.userId,"Interview scheduled",`Your ${i.round} interview for ${i.application.drive.role} at ${i.application.drive.company.name} is scheduled for ${new Date(i.scheduledAt).toLocaleString()}.`,"INTERVIEW",interviewId);
+ await notifyUser(i.application.student.userId,"Interview scheduled",`Your ${i.round} interview for ${i.application.drive.role} at ${i.application.drive.company.name} is scheduled for ${i.scheduledAt ? new Date(i.scheduledAt).toLocaleString() : "TBD"}.`,"INTERVIEW",interviewId);
 }
 
 export async function offerWorkflow(offerId:string){

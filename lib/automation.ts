@@ -42,8 +42,8 @@ export async function processPlacementAutomation() {
   for (const d of deadlines) {
     for (const st of students) {
       if(st.applications.some(a=>a.driveId===d.id)) continue;
-      const title = d.applicationDeadline <= oneDay ? "Deadline tomorrow" : "Placement deadline approaching";
-      const message = `${d.company.name} — ${d.role} closes on ${d.applicationDeadline.toLocaleString()}.`;
+      const title = d.applicationDeadline && d.applicationDeadline <= oneDay ? "Deadline tomorrow" : "Placement deadline approaching";
+      const message = `${d.company.name} — ${d.role} closes on ${d.applicationDeadline ? d.applicationDeadline.toLocaleString() : "N/A"}.`;
       if(!(await alreadySent(st.userId,"DRIVE_DEADLINE",d.id,title))) {
         await notifyUser(st.userId,title,message,"DRIVE_DEADLINE",d.id);
         deadlineReminders++;
@@ -58,8 +58,8 @@ export async function processPlacementAutomation() {
 
   let interviewReminders=0;
   for (const i of interviews) {
-    const title = i.scheduledAt <= oneDay ? "Interview reminder" : "Upcoming interview";
-    const message = `${i.round} interview for ${i.application.drive.role} at ${i.application.drive.company.name} is scheduled for ${i.scheduledAt.toLocaleString()}.`;
+    const title = i.scheduledAt && i.scheduledAt <= oneDay ? "Interview reminder" : "Upcoming interview";
+    const message = `${i.round} interview for ${i.application.drive.role} at ${i.application.drive.company.name} is scheduled for ${i.scheduledAt ? i.scheduledAt.toLocaleString() : "TBD"}.`;
     if(!(await alreadySent(i.application.student.userId,"INTERVIEW_REMINDER",i.id,title))) {
       await notifyUser(i.application.student.userId,title,message,"INTERVIEW_REMINDER",i.id);
       interviewReminders++;

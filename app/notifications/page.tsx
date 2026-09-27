@@ -10,7 +10,7 @@ export default async function NotificationsPage() {
   if (!session?.user) return null;
   const user = await prisma.user.findUnique({ where: { email: session.user.email! } });
   const notifications = user ? await prisma.notification.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 50 }) : [];
-  const serialized = notifications.map((notification) => ({ id: notification.id, title: notification.title, message: notification.message, type: notification.type, isRead: notification.isRead, createdAt: notification.createdAt.toISOString() }));
+  const serialized = notifications.map((notification) => ({ id: notification.id, title: notification.title, message: notification.message, type: notification.type ?? "GENERAL", isRead: notification.isRead, createdAt: notification.createdAt.toISOString() }));
   const unread = notifications.filter((notification) => !notification.isRead).length;
   const isStaff = ["ADMIN", "PLACEMENT_OFFICER"].includes(session.user.role);
 
