@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
+import { cache } from "react";
 import MobileNav from "@/components/layout/MobileNav";
 import SidebarNav from "@/components/layout/SidebarNav";
 import LogoutButton from "@/components/layout/LogoutButton";
 
- type Role = "ADMIN" | "PLACEMENT_OFFICER" | "STUDENT" | string;
+type Role = "ADMIN" | "PLACEMENT_OFFICER" | "STUDENT" | string;
 
 type Props = {
   children: ReactNode;
@@ -13,7 +14,15 @@ type Props = {
   global?: boolean;
 };
 
+const getShellState = cache(() => ({ rendered: false }));
+
 export default function WorkspaceShell({ children, role, notificationCount = 0, global = false }: Props) {
+  const shellState = getShellState();
+  if (shellState.rendered) {
+    return <>{children}</>;
+  }
+  shellState.rendered = true;
+
   const safeRole = role || "STUDENT";
   const isStudent = safeRole === "STUDENT";
   const label = isStudent ? "STUDENT WORKSPACE" : "PLACEMENT OPERATIONS";
